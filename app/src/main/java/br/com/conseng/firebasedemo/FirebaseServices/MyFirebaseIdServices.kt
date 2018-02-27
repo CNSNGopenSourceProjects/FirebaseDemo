@@ -8,6 +8,9 @@ import com.google.firebase.iid.FirebaseInstanceIdService
  * Created by Qin on 25/02/2018.
  */
 class MyFirebaseIdService : FirebaseInstanceIdService() {
+
+    private val TAG = "FIREBASE-SERVICE_ID"
+
     override fun onTokenRefresh() {
         super.onTokenRefresh()
         val refreshedToken=FirebaseInstanceId.getInstance().token
@@ -15,6 +18,6 @@ class MyFirebaseIdService : FirebaseInstanceIdService() {
     }
 
     private fun sendRegistrationToServer(refreshedToken: String) {
-        Log.d("DEBUG", refreshedToken)
+        Log.d(TAG, refreshedToken)
     }
 }

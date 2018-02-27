@@ -1,20 +1,18 @@
 package br.com.conseng.firebasedemo
 
-import android.app.PendingIntent
-import android.app.Notification
-import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.Settings
-import android.support.v4.app.NotificationCompat
 import android.support.v4.content.LocalBroadcastManager
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import br.com.conseng.firebasedemo.Config.Config
-import com.google.firebase.messaging.RemoteMessage
+import br.com.conseng.firebasedemo.FirebaseServices.INFO_MESSAGE_TEXT
+import br.com.conseng.firebasedemo.FirebaseServices.INFO_MESSAGE_TITLE
+import br.com.conseng.firebasedemo.NotificationGenerator.NotificationGenerator
+
 
 /**
  * On this Demo App I will test the Google Firebase functionality, such as:
@@ -44,41 +42,37 @@ import com.google.firebase.messaging.RemoteMessage
  * (9b) Add to AndroidManifest the MyFirebaseIdService service and the action INSTANCE_ID_EVENT.
  * (9v) Add to AndroidManifest the MyFirebaseMessagingService service and the action MESSAGING_EVENT.
  * NOW THE APPLICATION IS READY TO WORK WITH FIREBASE FEATURES...
+ * @see [https://www.youtube.com/watch?v=I485b7LzYkM]
  */
 class MainActivity : AppCompatActivity() {
 
-    private val TAG = "Activity MAIN"
+    private val TAG = "FIREBASE-Activity_MAIN"
 
-    var mRegistrationBroadcastReceiver:BroadcastReceiver?=null
+    /**
+     * Receive notifications from Firebase.
+     */
+    var mRegistrationBroadcastReceiver: BroadcastReceiver? = null
+
+    /**
+     * Show the Firebase received notification.
+     */
+    private var ng: NotificationGenerator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        mRegistrationBroadcastReceiver=object :BroadcastReceiver(){
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if(Config.STR_PUSH == intent!!.action) {
-                    val message = intent.getStringExtra("message")
-                    showNotification("Conseng", message)
+        mRegistrationBroadcastReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent) {
+                if (Config.STR_PUSH == intent.action) {
+                    val message = intent.getStringExtra(INFO_MESSAGE_TEXT)
+                    val title = intent.getStringExtra(INFO_MESSAGE_TITLE)
+                    if (null == ng) ng = NotificationGenerator(MainActivity::class.java)
+                    ng!!.showReceivedNotification(applicationContext, title, message)
                 }
             }
         }
         printCurrentState("onCreate")
-    }
-
-    private fun showNotification(title: String, message: String?) {
-        val intent=Intent(applicationContext, MainActivity::class.java)
-        val contentIntent=PendingIntent.getActivity(applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-        val builder=NotificationCompat.Builder(applicationContext)
-        builder.setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_ALL)
-                .setWhen(System.currentTimeMillis())
-                .setSmallIcon(R.drawable.ic_stat_notify)
-                .setContentText(title)
-                .setContentText(message)
-                .setContentIntent(contentIntent)
-        val notificationManager=baseContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(1, builder.build())
     }
 
     override fun onStart() {
@@ -89,13 +83,17 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         printCurrentState("onResume")
         super.onResume()
-        LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver, IntentFilter("registrationComplete"))
-        LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver, IntentFilter(Config.STR_PUSH))
+        if (null != mRegistrationBroadcastReceiver) {
+            LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver, IntentFilter("registrationComplete"))
+            LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver, IntentFilter(Config.STR_PUSH))
+        }
     }
 
     override fun onPause() {
         printCurrentState("onPause")
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mRegistrationBroadcastReceiver)
+        if (null != mRegistrationBroadcastReceiver) {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(mRegistrationBroadcastReceiver)
+        }
         super.onPause()
     }
 
